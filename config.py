@@ -1,10 +1,8 @@
 import os
 
-# Solución definitiva para las rutas de los archivos
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def get_path(filepath):
-    # Asegura que siempre busque dentro de la carpeta del proyecto
     return os.path.join(BASE_DIR, filepath)
 
 W = 800
@@ -28,7 +26,6 @@ NOMBRES_GATOS = [
     "VLADIMIRO"
 ]
 
-# ESTADOS DEL JUEGO
 MENU_PRINCIPAL = 0
 SELECCION_GATO = 1
 JUEGO = 2
@@ -36,3 +33,4 @@ GAME_OVER = 3
 MENU_NIVELES = 4
 PAUSA = 5  
 NIVEL_COMPLETADO = 6
+INGRESO_NOMBRE = 7
