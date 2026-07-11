@@ -1,7 +1,7 @@
 import pygame
 from random import randint, choice
 import config
-from ui import MenuButton, draw_text_with_shadow
+from ui import MenuButton, draw_text_with_shadow, draw_text_outlined
 from entities import Player, Enemy, Boss, Particle, GameSprite, PowerUp
 import json
 import os
@@ -61,7 +61,7 @@ score_nivel = 0
 boss_active = False
 jefe_generado_nivel = False
 tiempo_inicio_nivel = 0
-TIEMPO_PARA_JEFE = 45000 # 45 segundos en milisegundos
+TIEMPO_PARA_JEFE = 45000 
 
 y_fondo = 0
 bg_actual_img = None
@@ -96,17 +96,15 @@ powerups = pygame.sprite.Group()
 ethel = None
 
 def obtener_recursos_nivel(n):
-    if n == 1:
-        return config.get_path("imagenes/alien.png"), config.get_path("imagenes/amburguesa.png"), 0.08, 0.15
-    elif n == 2:
-        return config.get_path("imagenes/bwater.png"), config.get_path("imagenes/esf_agua.png"), 0.15, 0.25 
+    if n == 1: 
+        return config.get_path("imagenes/alien.png"), config.get_path("imagenes/amburguesa.png"), 0.08, 0.15, 2500, 4500
+    elif n == 2: 
+        return config.get_path("imagenes/bwater.png"), config.get_path("imagenes/esf_agua.png"), 0.15, 0.25, 1500, 2500
     else: 
-        return config.get_path("imagenes/perro.png"), config.get_path("imagenes/pizza.png"), 0.15, 0.15
+        return config.get_path("imagenes/perro.png"), config.get_path("imagenes/pizza.png"), 0.15, 0.15, 800, 1500
 
 def crear_enemigos():
-    if boss_active: 
-        return 
-
+    if boss_active: return 
     enemys.empty()
     enemy_bullets.empty()
     bullets.empty()
@@ -116,8 +114,9 @@ def crear_enemigos():
         if p.tipo == "corazon":
             p.kill()
     
-    img_enemy, img_bullet, b_scale, e_scale = obtener_recursos_nivel(nivel_actual)
-
+    img_enemy, img_bullet, b_scale, e_scale, cd_min, cd_max = obtener_recursos_nivel(nivel_actual)
+    speed_mod = score // 2000
+    
     for i in range(7):  
         lado = choice(["izquierda", "derecha"])
         if lado == "izquierda":
@@ -125,7 +124,7 @@ def crear_enemigos():
         else:
             x_ini = randint(config.W + 60, config.W + 300)
         y_ini = randint(50, config.H // 2 - 50)
-        enemy = Enemy(img_enemy, x_ini, y_ini, randint(3, 6), img_bullet, b_scale, escala=e_scale)
+        enemy = Enemy(img_enemy, x_ini, y_ini, randint(3 + speed_mod, 6 + speed_mod), img_bullet, b_scale, escala=e_scale, cooldown_min=cd_min, cooldown_max=cd_max)
         enemys.add(enemy)
 
 def spawn_boss(n):
@@ -138,7 +137,7 @@ def spawn_boss(n):
         if p.tipo == "corazon":
             p.kill()
     
-    img_boss, img_bullet, b_scale, _ = obtener_recursos_nivel(n)
+    img_boss, img_bullet, b_scale, _, _, _ = obtener_recursos_nivel(n)
     boss = Boss(img_boss, config.W//2 - 75, 50, 4, img_bullet, b_scale, vida=40, escala=0.5)
     bosses.add(boss)
 
@@ -149,7 +148,6 @@ def desencadenar_explosion(x, y):
         p = Particle(x, y, color_elegido)
         particles.add(p)
 
-# --- FUNCIÓN HELPER PARA INICIAR JUEGO ---
 def iniciar_juego_desde_nivel(n):
     global ethel, score, score_nivel, vidas, nivel_actual, nivel_inicial, boss_active, jefe_generado_nivel, estado_actual, tiempo_inicio_nivel
     ethel = Player(config.GATOS_DISPONIBLES[gato_actual_idx], 400, 500, 8, escala=0.15)
@@ -162,10 +160,7 @@ def iniciar_juego_desde_nivel(n):
     bosses.empty()
     powerups.empty()
     jefe_generado_nivel = False
-    
-    # Marcamos el inicio del tiempo al empezar el nivel
     tiempo_inicio_nivel = pygame.time.get_ticks()
-    
     actualizar_fondo_nivel()
     crear_enemigos()
     estado_actual = config.JUEGO
@@ -176,22 +171,18 @@ font_small = pygame.font.SysFont("Courier New", 24, bold=True)
 font_score = pygame.font.SysFont("Courier New", 26, bold=True)
 font_pausa_btn = pygame.font.SysFont("Courier New", 18, bold=True) 
 
-# Botones del menú principal simplificados (Niveles pasó adelante)
+# Botones
 btn_jugar = MenuButton("JUGAR", config.W // 2 - 125, config.H // 2, 250, 55)
-btn_salir = MenuButton("SALIR", config.W // 2 - 125, config.H // 2 + 80, 250, 55)
-
+btn_salir = MenuButton("SALIR", config.W // 2 - 125, config.H // 2 + 80, 250, 55) # Acercado a 80
 btn_reintentar = MenuButton("REINTENTAR", config.W // 2 - 125, config.H // 2 + 170, 250, 55)
 btn_volver_go = MenuButton("VOLVER AL MENÚ", config.W // 2 - 150, config.H // 2 + 240, 300, 55)
-
 btn_siguiente_nivel = MenuButton("SIGUIENTE NIVEL", config.W // 2 - 150, config.H // 2 + 30, 300, 55)
 btn_menu_completado = MenuButton("SALIR AL MENÚ", config.W // 2 - 150, config.H // 2 + 100, 300, 55)
-
 btn_prev = MenuButton("<", config.W // 2 - 190, config.H // 2 - 15, 50, 50, is_circle=True)
 btn_next = MenuButton(">", config.W // 2 + 140, config.H // 2 - 15, 50, 50, is_circle=True)
 btn_confirmar = MenuButton("SELECCIONAR", config.W // 2 - 125, config.H // 2 + 100, 250, 50)
 btn_volver_seleccion = MenuButton("VOLVER", config.W // 2 - 100, config.H // 2 + 170, 200, 50)
 
-# --- RECURSOS PARA EL MENÚ DE NIVELES ---
 def cargar_miniatura(idx):
     try:
         if idx < len(config.FONDOS_NIVELES):
@@ -211,7 +202,6 @@ rect_lvl1 = pygame.Rect(config.W // 2 - 200, config.H // 2 - 120, 400, 80)
 rect_lvl2 = pygame.Rect(config.W // 2 - 200, config.H // 2 - 20, 400, 80)
 rect_lvl3 = pygame.Rect(config.W // 2 - 200, config.H // 2 + 80, 400, 80)
 btn_volver_niveles = MenuButton("VOLVER", config.W // 2 - 100, config.H // 2 + 200, 200, 50)
-
 btn_hud_pausa = MenuButton("||", config.W - 70, 10, 50, 35) 
 btn_reanudar = MenuButton("REANUDAR", config.W // 2 - 125, config.H // 2 - 20, 250, 55)
 btn_menu_pausa = MenuButton("SALIR AL MENÚ", config.W // 2 - 125, config.H // 2 + 50, 250, 55)
@@ -277,6 +267,7 @@ while running:
                         score = 0
                     jefe_generado_nivel = False
                     score_nivel = 0
+                    tiempo_inicio_nivel = pygame.time.get_ticks() 
                     actualizar_fondo_nivel()
                     crear_enemigos()
                     estado_actual = config.JUEGO
@@ -328,6 +319,7 @@ while running:
                         score = 0
                     jefe_generado_nivel = False
                     score_nivel = 0 
+                    tiempo_inicio_nivel = pygame.time.get_ticks() 
                     actualizar_fondo_nivel()
                     crear_enemigos()
                     estado_actual = config.JUEGO
@@ -349,13 +341,28 @@ while running:
         window.blit(bg, (0, 0))
 
     if estado_actual == config.MENU_PRINCIPAL:
+        font_title = pygame.font.SysFont("Courier New", 80, bold=True)
+        font_subtitle = pygame.font.SysFont("Courier New", 40, bold=True)
+
         btn_jugar.check_hover(mouse_pos)
         btn_salir.check_hover(mouse_pos)
-        
+
+        # Dibujar Gato
+        gato_img = pygame.image.load(config.GATOS_DISPONIBLES[0]).convert_alpha()
+        gato_img = pygame.transform.scale(gato_img, (80, 80))
+        window.blit(gato_img, (config.W // 2 - 40, config.H // 2 - 280))
+
+        # Título Morado con borde amarillo
         t_titulo = "ETHEL(UIA)"
-        w_tit = font_big.render(t_titulo, True, (0,0,0)).get_width()
-        draw_text_with_shadow(window, t_titulo, font_big, (212, 175, 55), config.W // 2 - w_tit // 2, 100)
-        
+        w_tit = font_title.render(t_titulo, True, (0,0,0)).get_width()
+        draw_text_outlined(window, t_titulo, font_title, (75, 0, 130), (255, 215, 0), config.W // 2 - w_tit // 2, config.H // 2 - 220)
+
+        # Subtítulo
+        t_sub = "LOST GALAXY"
+        w_sub = font_subtitle.render(t_sub, True, (0,0,0)).get_width()
+        draw_text_with_shadow(window, t_sub, font_subtitle, (255, 255, 255), config.W // 2 - w_sub // 2, config.H // 2 - 140)
+
+        # Botones
         btn_jugar.draw(window, font_btn)
         btn_salir.draw(window, font_btn)
 
@@ -364,11 +371,9 @@ while running:
         btn_next.check_hover(mouse_pos)
         btn_confirmar.check_hover(mouse_pos)
         btn_volver_seleccion.check_hover(mouse_pos)
-
         t1 = "SELECCIONA TU PILOTO"
         w1 = font_big.render(t1, True, (0,0,0)).get_width()
         draw_text_with_shadow(window, t1, font_big, (212, 175, 55), config.W // 2 - w1 // 2, 40)
-        
         marco_rect = pygame.Rect(config.W // 2 - 110, config.H // 2 - 110, 220, 200)
         bg_marco = pygame.Surface((220, 200))
         bg_marco.set_alpha(100)
@@ -376,14 +381,11 @@ while running:
         window.blit(bg_marco, (config.W // 2 - 110, config.H // 2 - 110))
         pygame.draw.rect(window, (90, 41, 163), marco_rect, border_radius=15)
         pygame.draw.rect(window, (212, 175, 55), marco_rect, width=3, border_radius=15)
-
         gato_preview = GameSprite(config.GATOS_DISPONIBLES[gato_actual_idx], config.W // 2 - 50, config.H // 2 - 75, 0, escala=0.20)
         gato_preview.draw(window)
-
         nombre_txt = config.NOMBRES_GATOS[gato_actual_idx]
         w_nom = font_btn.render(nombre_txt, True, (0,0,0)).get_width()
         draw_text_with_shadow(window, nombre_txt, font_btn, (255, 255, 255), config.W // 2 - w_nom // 2, config.H // 2 - 155)
-
         btn_prev.draw(window, font_btn)
         btn_next.draw(window, font_btn)
         btn_confirmar.draw(window, font_btn)
@@ -393,16 +395,13 @@ while running:
         t_niv = "ELIGE TU DESTINO"
         w_niv = font_big.render(t_niv, True, (0,0,0)).get_width()
         draw_text_with_shadow(window, t_niv, font_big, (212, 175, 55), config.W // 2 - w_niv // 2, 40)
-
         para_renderizar = [
-            (rect_lvl1, miniatura_lvl1, "ESPACIO"),
-            (rect_lvl2, miniatura_lvl2, "TIERRA"),
-            (rect_lvl3, miniatura_lvl3, "MARTE")
+            (rect_lvl1, miniatura_lvl1, "ESPACIO", "FÁCIL"),
+            (rect_lvl2, miniatura_lvl2, "TIERRA", "NORMAL"),
+            (rect_lvl3, miniatura_lvl3, "MARTE", "DIFÍCIL")
         ]
-
-        for rect, img_fondo, texto in para_renderizar:
+        for rect, img_fondo, texto, dificultad in para_renderizar:
             window.blit(img_fondo, rect.topleft)
-            
             if rect.collidepoint(mouse_pos):
                 overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
                 overlay.fill((255, 255, 255, 60))
@@ -410,12 +409,19 @@ while running:
                 color_borde = (255, 215, 0)
             else:
                 color_borde = (255, 255, 255)
-                
             pygame.draw.rect(window, color_borde, rect, width=3, border_radius=5)
             
             w_txt = font_btn.render(texto, True, (0,0,0)).get_width()
-            draw_text_with_shadow(window, texto, font_btn, (255, 255, 255), rect.centerx - w_txt // 2, rect.centery - 15)
-
+            draw_text_with_shadow(window, texto, font_btn, (255, 255, 255), rect.centerx - w_txt // 2, rect.centery - 25)
+            
+            color_dif = (200, 200, 200)
+            if dificultad == "FÁCIL": color_dif = (0, 255, 0)
+            elif dificultad == "NORMAL": color_dif = (255, 255, 0)
+            elif dificultad == "DIFÍCIL": color_dif = (255, 0, 0)
+            
+            w_dif = font_small.render(dificultad, True, (0,0,0)).get_width()
+            draw_text_with_shadow(window, dificultad, font_small, color_dif, rect.centerx - w_dif // 2, rect.centery + 5)
+            
         btn_volver_niveles.check_hover(mouse_pos)
         btn_volver_niveles.draw(window, font_btn)
 
@@ -423,21 +429,18 @@ while running:
         ethel.move()
         ethel.update_inmunidad()  
         ethel.draw(window)
-
         enemys.update(enemy_bullets)
         bullets.update()
         enemy_bullets.update()
         particles.update() 
         bosses.update(enemy_bullets)
         powerups.update()  
-        
         enemys.draw(window)
         bullets.draw(window)
         enemy_bullets.draw(window)
         particles.draw(window) 
         bosses.draw(window)
         powerups.draw(window)  
-        
         items_recogidos = pygame.sprite.spritecollide(ethel, powerups, True)
         for item in items_recogidos:
             if item.tipo == "corazon":
@@ -445,14 +448,11 @@ while running:
                     vidas += 1
             else:
                 ethel.activar_powerup(item.tipo)
-            
             desencadenar_explosion(item.rect.centerx, item.rect.centery)
         
-        # --- Lógica de aparición dinámica del jefe ---
         tiempo_transcurrido = pygame.time.get_ticks() - tiempo_inicio_nivel
         
         if not boss_active:
-            # Aparece por puntos (3000) O por tiempo (45s)
             if not jefe_generado_nivel and (score_nivel >= 3000 or tiempo_transcurrido >= TIEMPO_PARA_JEFE):
                 spawn_boss(nivel_actual)
                 jefe_generado_nivel = True
@@ -461,25 +461,23 @@ while running:
                 for hit in collided:
                     score += 100  
                     score_nivel += 100
-                    
                     desencadenar_explosion(hit.rect.centerx, hit.rect.centery)
-                    
                     if randint(1, 10) <= 2:
                         tipo_spawn = choice(["corazon", "alfa", "omega"])
-                        
                         ruta_img = config.get_path("imagenes/corazon.png")
                         if tipo_spawn == "alfa":
                             ruta_img = config.get_path("imagenes/alfa.png")
                         elif tipo_spawn == "omega":
                             ruta_img = config.get_path("imagenes/omega.png")
-                            
                         spawned_item = PowerUp(ruta_img, hit.rect.centerx, hit.rect.centery, speed=3, escala=0.15) 
                         powerups.add(spawned_item)
                     
-                    img_e, img_b, b_scale, e_scale = obtener_recursos_nivel(nivel_actual)
+                    img_e, img_b, b_scale, e_scale, cd_min, cd_max = obtener_recursos_nivel(nivel_actual)
                     lado = choice(["izquierda", "derecha"])
                     x_spawn = -60 if lado == "izquierda" else config.W + 60
-                    enemy = Enemy(img_e, x_spawn, randint(50, config.H // 2 - 50), randint(3, 6), img_b, b_scale, escala=e_scale)
+                    
+                    speed_mod = score // 2000
+                    enemy = Enemy(img_e, x_spawn, randint(50, config.H // 2 - 50), randint(3 + speed_mod, 6 + speed_mod), img_b, b_scale, escala=e_scale, cooldown_min=cd_min, cooldown_max=cd_max)
                     enemys.add(enemy)
         else:
             collided_boss = pygame.sprite.groupcollide(bosses, bullets, False, True)
@@ -492,7 +490,6 @@ while running:
                     score_nivel += 500
                     boss.kill()
                     boss_active = False
-                    
                     if nivel_actual == 3:
                         if es_nuevo_record(score, datos_juego["leaderboard"]):
                             estado_actual = config.INGRESO_NOMBRE
@@ -506,9 +503,7 @@ while running:
             if pygame.sprite.spritecollide(ethel, enemys, False) or pygame.sprite.spritecollide(ethel, enemy_bullets, False) or pygame.sprite.spritecollide(ethel, bosses, False):
                 vidas -= 1  
                 enemy_bullets.empty()  
-                
                 desencadenar_explosion(ethel.rect.centerx, ethel.rect.centery)
-                
                 if vidas <= 0:
                     if es_nuevo_record(score, datos_juego["leaderboard"]):
                         estado_actual = config.INGRESO_NOMBRE
@@ -528,10 +523,8 @@ while running:
         hud_bar.fill((35, 15, 65)) 
         window.blit(hud_bar, (0, 0))
         pygame.draw.line(window, (212, 175, 55), (0, 55), (config.W, 55), width=2) 
-
         draw_text_with_shadow(window, f"SCORE: {score}", font_score, (255, 255, 255), 20, 15)
         draw_text_with_shadow(window, f"NIVEL: {nivel_actual}", font_score, (255, 255, 255), config.W - 240, 15)
-
         draw_text_with_shadow(window, "VIDAS:", font_score, (255, 255, 255), 290, 15)
         max_corazones_visuales = min(vidas, 3)
         for i in range(max_corazones_visuales):
@@ -539,12 +532,10 @@ while running:
             window.blit(img_corazon, (x_corazon, 12))
         if vidas > 3:
             draw_text_with_shadow(window, f"+{vidas - 3}", font_score, (255, 50, 50), 380 + (3 * 45), 15)
-            
         if boss_active:
              for b in bosses:
                 pygame.draw.rect(window, (255,0,0), (200, 60, 400, 20))
                 pygame.draw.rect(window, (0,255,0), (200, 60, 400 * (b.vida/b.max_vida), 20))
-
         btn_hud_pausa.check_hover(mouse_pos)
         btn_hud_pausa.draw(window, font_pausa_btn)
         
@@ -555,20 +546,16 @@ while running:
         enemy_bullets.draw(window)
         bosses.draw(window)
         powerups.draw(window)
-
         overlay = pygame.Surface((config.W, config.H))
         overlay.set_alpha(180) 
         overlay.fill((0, 0, 0)) 
         window.blit(overlay, (0, 0))
-
         t_nr = "¡NUEVO RÉCORD!"
         w_nr = font_big.render(t_nr, True, (0,0,0)).get_width()
         draw_text_with_shadow(window, t_nr, font_big, (255, 215, 0), config.W // 2 - w_nr // 2, config.H // 2 - 150)
-
         t_inst = "INGRESA TUS INICIALES (3)"
         w_inst = font_small.render(t_inst, True, (0,0,0)).get_width()
         draw_text_with_shadow(window, t_inst, font_small, (255, 255, 255), config.W // 2 - w_inst // 2, config.H // 2 - 80)
-
         t_name = nombre_ingresado + ("_" * (3 - len(nombre_ingresado)))
         w_name = font_big.render(t_name, True, (0,0,0)).get_width()
         draw_text_with_shadow(window, t_name, font_big, (255, 255, 255), config.W // 2 - w_name // 2, config.H // 2)
@@ -576,34 +563,28 @@ while running:
     elif estado_actual == config.NIVEL_COMPLETADO:
         btn_siguiente_nivel.check_hover(mouse_pos)
         btn_menu_completado.check_hover(mouse_pos)
-
         enemys.draw(window)
         ethel.draw(window)
         bullets.draw(window)
         enemy_bullets.draw(window)
         particles.draw(window) 
         powerups.draw(window)
-        
         overlay = pygame.Surface((config.W, config.H))
         overlay.set_alpha(160)
         overlay.fill((0, 0, 0))
         window.blit(overlay, (0, 0))
-        
         t_comp = "¡NIVEL COMPLETADO!"
         w_comp = font_big.render(t_comp, True, (0,0,0)).get_width()
         draw_text_with_shadow(window, t_comp, font_big, (50, 255, 50), config.W // 2 - w_comp // 2, config.H // 2 - 120)
-        
         t_pts = f"Puntuación del Nivel: {score_nivel}"
         w_pts = font_small.render(t_pts, True, (0,0,0)).get_width()
         draw_text_with_shadow(window, t_pts, font_small, (255, 255, 255), config.W // 2 - w_pts // 2, config.H // 2 - 40)
-        
         btn_siguiente_nivel.draw(window, font_btn)
         btn_menu_completado.draw(window, font_btn)
 
     elif estado_actual == config.PAUSA:
         btn_reanudar.check_hover(mouse_pos)
         btn_menu_pausa.check_hover(mouse_pos)
-
         enemys.draw(window)
         ethel.draw(window)
         bullets.draw(window)
@@ -611,7 +592,6 @@ while running:
         particles.draw(window) 
         bosses.draw(window)
         powerups.draw(window)
-        
         hud_bar = pygame.Surface((config.W, 55))
         hud_bar.set_alpha(160)
         hud_bar.fill((35, 15, 65))
@@ -619,63 +599,51 @@ while running:
         pygame.draw.line(window, (212, 175, 55), (0, 55), (config.W, 55), width=2)
         draw_text_with_shadow(window, f"SCORE: {score}", font_score, (255, 255, 255), 20, 15)
         draw_text_with_shadow(window, f"NIVEL: {nivel_actual}", font_score, (255, 255, 255), config.W - 240, 15)
-        
         draw_text_with_shadow(window, "VIDAS:", font_score, (255, 255, 255), 290, 15)
         max_corazones_visuales = min(vidas, 3)
         for i in range(max_corazones_visuales):
             window.blit(img_corazon, (380 + (i * 45), 12))
         if vidas > 3:
             draw_text_with_shadow(window, f"+{vidas - 3}", font_score, (255, 50, 50), 380 + (3 * 45), 15)
-
         overlay = pygame.Surface((config.W, config.H))
         overlay.set_alpha(130)
         overlay.fill((0, 0, 0))
         window.blit(overlay, (0, 0))
-
         t_p = "JUEGO PAUSADO"
         w_p = font_big.render(t_p, True, (0,0,0)).get_width()
         draw_text_with_shadow(window, t_p, font_big, (212, 175, 55), config.W // 2 - w_p // 2, config.H // 2 - 110)
-
         btn_reanudar.draw(window, font_btn)
         btn_menu_pausa.draw(window, font_btn)
 
     elif estado_actual == config.GAME_OVER:
         btn_reintentar.check_hover(mouse_pos)
         btn_volver_go.check_hover(mouse_pos)
-        
         enemys.draw(window)
         ethel.draw(window)
         bullets.draw(window)
         enemy_bullets.draw(window)
         bosses.draw(window)
         powerups.draw(window)
-
         overlay = pygame.Surface((config.W, config.H))
         overlay.set_alpha(180) 
         overlay.fill((0, 0, 0)) 
         window.blit(overlay, (0, 0))
-        
         t_go = "GAME OVER"
         t_sc = f"TU PUNTUACIÓN: {score}"
         w_go = font_big.render(t_go, True, (0,0,0)).get_width()
         w_sc = font_score.render(t_sc, True, (0,0,0)).get_width()
-        
         draw_text_with_shadow(window, t_go, font_big, (255, 50, 50), config.W // 2 - w_go // 2, config.H // 2 - 220)
         draw_text_with_shadow(window, t_sc, font_score, (255, 255, 255), config.W // 2 - w_sc // 2, config.H // 2 - 160) 
-        
         t_lb = "--- MEJORES PILOTOS ---"
         w_lb = font_score.render(t_lb, True, (0,0,0)).get_width()
         draw_text_with_shadow(window, t_lb, font_score, (50, 255, 50), config.W // 2 - w_lb // 2, config.H // 2 - 100)
-        
         for i, record in enumerate(datos_juego["leaderboard"]):
             t_rec = f"{i+1}. {record['nombre']} - {record['score']}"
             w_rec = font_score.render(t_rec, True, (0,0,0)).get_width()
             color = (255, 215, 0) if i == 0 else (255, 255, 255)
             draw_text_with_shadow(window, t_rec, font_score, color, config.W // 2 - w_rec // 2, config.H // 2 - 50 + (i * 35))
-        
         btn_reintentar.draw(window, font_btn)
         btn_volver_go.draw(window, font_btn)
-        
     pygame.display.update()
 
 pygame.quit()
