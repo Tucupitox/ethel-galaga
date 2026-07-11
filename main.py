@@ -17,6 +17,22 @@ running = True
 
 estado_actual = config.MENU_PRINCIPAL
 
+# Variables para la Intro (Ajustadas para evitar recortes)
+intro_text = [
+    "Ethel ha estado buscando la legendaria",
+    "'Galaxia Perdida' durante años.",
+    "Al atravesar un agujero de gusano,",
+    "descubre que no está sola...",
+    "Fuerzas extrañas protegen los",
+    "secretos de este lugar.",
+    "Tu misión: descubrir la verdad,",
+    "evitar que la galaxia sea destruida,",
+    "y regresar a casa."
+]
+current_line = 0
+char_index = 0
+last_type_time = pygame.time.get_ticks()
+
 ARCHIVO_GUARDADO = config.get_path("save_data.json")
 
 def cargar_datos():
@@ -75,14 +91,14 @@ def actualizar_fondo_nivel():
     
     archivo_fondo = config.FONDOS_NIVELES[idx_fondo]
     bg_loaded = pygame.image.load(archivo_fondo).convert()
-    bg = pygame.transform.scale(bg_loaded, (config.W, config.H))
+    bg = pygame.transform.smoothscale(bg_loaded, (config.W, config.H))
     bg_actual_img = archivo_fondo
 
 actualizar_fondo_nivel()
 
 try:
     corazon_original = pygame.image.load(config.get_path("imagenes/corazon.png")).convert_alpha()
-    img_corazon = pygame.transform.scale(corazon_original, (36, 32))
+    img_corazon = pygame.transform.smoothscale(corazon_original, (36, 32))
 except:
     img_corazon = pygame.Surface((36, 32))
     img_corazon.fill((255, 0, 0))
@@ -169,11 +185,13 @@ font_big = pygame.font.SysFont("Courier New", 56, bold=True)
 font_btn = pygame.font.SysFont("Courier New", 28, bold=True)
 font_small = pygame.font.SysFont("Courier New", 24, bold=True)
 font_score = pygame.font.SysFont("Courier New", 26, bold=True)
-font_pausa_btn = pygame.font.SysFont("Courier New", 18, bold=True) 
+font_pausa_btn = pygame.font.SysFont("Courier New", 18, bold=True)
+font_story = pygame.font.SysFont("Courier New", 22, italic=True)
 
 # Botones
 btn_jugar = MenuButton("JUGAR", config.W // 2 - 125, config.H // 2, 250, 55)
-btn_salir = MenuButton("SALIR", config.W // 2 - 125, config.H // 2 + 80, 250, 55) # Acercado a 80
+btn_salir = MenuButton("SALIR", config.W // 2 - 125, config.H // 2 + 80, 250, 55)
+btn_skip = MenuButton("SALTAR", config.W - 130, config.H - 80, 100, 50)
 btn_reintentar = MenuButton("REINTENTAR", config.W // 2 - 125, config.H // 2 + 170, 250, 55)
 btn_volver_go = MenuButton("VOLVER AL MENÚ", config.W // 2 - 150, config.H // 2 + 240, 300, 55)
 btn_siguiente_nivel = MenuButton("SIGUIENTE NIVEL", config.W // 2 - 150, config.H // 2 + 30, 300, 55)
@@ -187,7 +205,7 @@ def cargar_miniatura(idx):
     try:
         if idx < len(config.FONDOS_NIVELES):
             img = pygame.image.load(config.FONDOS_NIVELES[idx]).convert()
-            return pygame.transform.scale(img, (400, 80))
+            return pygame.transform.smoothscale(img, (400, 80))
     except:
         pass
     surf = pygame.Surface((400, 80))
@@ -222,7 +240,10 @@ while running:
                 else:
                     window = pygame.display.set_mode((config.W, config.H), pygame.SCALED)
             
-            if estado_actual == config.SELECCION_GATO:
+            if estado_actual == config.INTRO and event.key == pygame.K_SPACE:
+                estado_actual = config.SELECCION_GATO
+            
+            elif estado_actual == config.SELECCION_GATO:
                 if event.key == pygame.K_LEFT:
                     gato_actual_idx = (gato_actual_idx - 1) % len(config.GATOS_DISPONIBLES)
                 if event.key == pygame.K_RIGHT:
@@ -277,9 +298,15 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if estado_actual == config.MENU_PRINCIPAL:
                 if btn_jugar.check_hover(mouse_pos):
-                    estado_actual = config.SELECCION_GATO
+                    estado_actual = config.INTRO
+                    current_line = 0
+                    char_index = 0
                 elif btn_salir.check_hover(mouse_pos):
                     running = False
+            
+            elif estado_actual == config.INTRO:
+                if btn_skip.check_hover(mouse_pos):
+                    estado_actual = config.SELECCION_GATO
 
             elif estado_actual == config.SELECCION_GATO:
                 if btn_prev.check_hover(mouse_pos):
@@ -332,37 +359,59 @@ while running:
                 elif btn_volver_go.check_hover(mouse_pos):
                     estado_actual = config.MENU_PRINCIPAL
 
-    if bg_actual_img and "galaxia.jpg" in bg_actual_img:
-        if estado_actual != config.GAME_OVER and estado_actual != config.PAUSA and estado_actual != config.NIVEL_COMPLETADO and estado_actual != config.INGRESO_NOMBRE:
-            y_fondo = (y_fondo + 1) % config.H
-        window.blit(bg, (0, y_fondo))
-        window.blit(bg, (0, y_fondo - config.H))
+    if estado_actual != config.INTRO:
+        if bg_actual_img and "galaxia.jpg" in bg_actual_img:
+            if estado_actual != config.GAME_OVER and estado_actual != config.PAUSA and estado_actual != config.NIVEL_COMPLETADO and estado_actual != config.INGRESO_NOMBRE:
+                y_fondo = (y_fondo + 1) % config.H
+            window.blit(bg, (0, y_fondo))
+            window.blit(bg, (0, y_fondo - config.H))
+        else:
+            window.blit(bg, (0, 0))
     else:
-        window.blit(bg, (0, 0))
+        window.fill((0, 0, 0)) # Fondo negro para la intro
 
-    if estado_actual == config.MENU_PRINCIPAL:
+    if estado_actual == config.INTRO:
+        # Lógica de tipo máquina de escribir
+        now = pygame.time.get_ticks()
+        if now - last_type_time > 50:
+            if char_index < len(intro_text[current_line]):
+                char_index += 1
+            elif current_line < len(intro_text) - 1:
+                current_line += 1
+                char_index = 0
+            else:
+                if now - last_type_time > 2000:
+                    estado_actual = config.SELECCION_GATO
+            last_type_time = now
+
+        for i in range(current_line + 1):
+            text_to_draw = intro_text[i][:char_index] if i == current_line else intro_text[i]
+            surf = font_story.render(text_to_draw, True, (255, 255, 255))
+            # Ajuste de espaciado vertical de 40 a 50 para compensar más líneas
+            window.blit(surf, (50, 100 + i * 50))
+        
+        btn_skip.check_hover(mouse_pos)
+        btn_skip.draw(window, font_btn)
+
+    elif estado_actual == config.MENU_PRINCIPAL:
         font_title = pygame.font.SysFont("Courier New", 80, bold=True)
         font_subtitle = pygame.font.SysFont("Courier New", 40, bold=True)
 
         btn_jugar.check_hover(mouse_pos)
         btn_salir.check_hover(mouse_pos)
 
-        # Dibujar Gato
         gato_img = pygame.image.load(config.GATOS_DISPONIBLES[0]).convert_alpha()
-        gato_img = pygame.transform.scale(gato_img, (80, 80))
-        window.blit(gato_img, (config.W // 2 - 40, config.H // 2 - 280))
+        gato_img = pygame.transform.smoothscale(gato_img, (150, 150))
+        window.blit(gato_img, (config.W // 2 - 75, config.H // 2 - 320))
 
-        # Título Morado con borde amarillo
         t_titulo = "ETHEL(UIA)"
         w_tit = font_title.render(t_titulo, True, (0,0,0)).get_width()
         draw_text_outlined(window, t_titulo, font_title, (75, 0, 130), (255, 215, 0), config.W // 2 - w_tit // 2, config.H // 2 - 220)
 
-        # Subtítulo
         t_sub = "LOST GALAXY"
         w_sub = font_subtitle.render(t_sub, True, (0,0,0)).get_width()
         draw_text_with_shadow(window, t_sub, font_subtitle, (255, 255, 255), config.W // 2 - w_sub // 2, config.H // 2 - 140)
 
-        # Botones
         btn_jugar.draw(window, font_btn)
         btn_salir.draw(window, font_btn)
 
