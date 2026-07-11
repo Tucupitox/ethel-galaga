@@ -35,7 +35,10 @@ class GameSprite(pygame.sprite.Sprite):
         alto_orig = sprite_loaded.get_height()
         nuevo_ancho = int(ancho_orig * escala)
         nuevo_alto = int(alto_orig * escala)
-        self.image = pygame.transform.scale(sprite_loaded, (nuevo_ancho, nuevo_alto))
+        
+        # Se ha aplicado smoothscale para mejorar la calidad visual en lugar de scale[cite: 6]
+        self.image = pygame.transform.smoothscale(sprite_loaded, (nuevo_ancho, nuevo_alto))
+        
         self.speed = speed
         self.rect = self.image.get_rect()
         self.rect.x = x
