@@ -36,7 +36,7 @@ class GameSprite(pygame.sprite.Sprite):
         nuevo_ancho = int(ancho_orig * escala)
         nuevo_alto = int(alto_orig * escala)
         
-        # Se ha aplicado smoothscale para mejorar la calidad visual en lugar de scale[cite: 6]
+        # Se ha aplicado smoothscale para mejorar la calidad visual en lugar de scale[cite: 1]
         self.image = pygame.transform.smoothscale(sprite_loaded, (nuevo_ancho, nuevo_alto))
         
         self.speed = speed
@@ -62,9 +62,10 @@ class Player(GameSprite):
 
     def move(self):
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT] and self.rect.x > 0: 
+        # Soporte para flechas y teclas A / D
+        if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and self.rect.x > 0: 
             self.rect.x -= self.speed 
-        if keys[pygame.K_RIGHT] and self.rect.x < config.W - self.rect.width: 
+        if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and self.rect.x < config.W - self.rect.width: 
             self.rect.x += self.speed 
             
     def fire(self, bullets_group):
@@ -116,14 +117,12 @@ class Enemy(GameSprite):
         self.cooldown = randint(cooldown_min, cooldown_max)
         self.dir_x = 1 if x < 0 else -1
         
-        # Parámetros para movimiento sinusoidal
         self.initial_y = y
         self.amplitude = randint(20, 50)
         self.frequency = uniform(0.01, 0.03)
 
     def update(self, enemy_bullets_group):
         self.rect.x += self.speed * self.dir_x
-        # Cálculo de movimiento sinusoidal en Y
         self.rect.y = self.initial_y + int(math.sin(self.rect.x * self.frequency) * self.amplitude)
         
         if (self.dir_x == 1 and self.rect.x > config.W + 60) or (self.dir_x == -1 and self.rect.x < -60):

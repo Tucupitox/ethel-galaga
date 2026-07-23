@@ -37,7 +37,6 @@ def draw_text_with_shadow(surface, text, font, color=(255, 255, 255), x=0, y=0):
     surface.blit(text_main, (x, y))
 
 def draw_text_outlined(surface, text, font, color, border_color, x, y):
-    # Genera el borde dibujando el texto en varias posiciones desplazadas
     for dx, dy in [(-2,0), (2,0), (0,-2), (0,2), (-1,-1), (1,1), (-1,1), (1,-1)]:
         surface.blit(font.render(text, True, border_color), (x + dx, y + dy))
     surface.blit(font.render(text, True, color), (x, y))

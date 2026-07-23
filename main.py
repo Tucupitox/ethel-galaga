@@ -17,7 +17,6 @@ running = True
 
 estado_actual = config.MENU_PRINCIPAL
 
-# Variables para la Intro (Ajustadas para evitar recortes)
 intro_text = [
     "Ethel ha estado buscando la legendaria",
     "'Galaxia Perdida' durante años.",
@@ -188,9 +187,11 @@ font_score = pygame.font.SysFont("Courier New", 26, bold=True)
 font_pausa_btn = pygame.font.SysFont("Courier New", 18, bold=True)
 font_story = pygame.font.SysFont("Courier New", 22, italic=True)
 
-# Botones
-btn_jugar = MenuButton("JUGAR", config.W // 2 - 125, config.H // 2, 250, 55)
-btn_salir = MenuButton("SALIR", config.W // 2 - 125, config.H // 2 + 80, 250, 55)
+btn_jugar = MenuButton("JUGAR", config.W // 2 - 125, config.H // 2 - 20, 250, 50)
+btn_controles = MenuButton("CONTROLES", config.W // 2 - 125, config.H // 2 + 45, 250, 50)
+btn_salir = MenuButton("SALIR", config.W // 2 - 125, config.H // 2 + 110, 250, 50)
+btn_volver_controles = MenuButton("VOLVER", config.W // 2 - 100, config.H // 2 + 190, 200, 50)
+
 btn_skip = MenuButton("SALTAR", config.W - 130, config.H - 80, 100, 50)
 btn_reintentar = MenuButton("REINTENTAR", config.W // 2 - 125, config.H // 2 + 170, 250, 55)
 btn_volver_go = MenuButton("VOLVER AL MENÚ", config.W // 2 - 150, config.H // 2 + 240, 300, 55)
@@ -242,6 +243,10 @@ while running:
             
             if estado_actual == config.INTRO and event.key == pygame.K_SPACE:
                 estado_actual = config.SELECCION_GATO
+            
+            elif estado_actual == config.CONTROLES:
+                if event.key == pygame.K_ESCAPE:
+                    estado_actual = config.MENU_PRINCIPAL
             
             elif estado_actual == config.SELECCION_GATO:
                 if event.key == pygame.K_LEFT:
@@ -301,8 +306,14 @@ while running:
                     estado_actual = config.INTRO
                     current_line = 0
                     char_index = 0
+                elif btn_controles.check_hover(mouse_pos):
+                    estado_actual = config.CONTROLES
                 elif btn_salir.check_hover(mouse_pos):
                     running = False
+
+            elif estado_actual == config.CONTROLES:
+                if btn_volver_controles.check_hover(mouse_pos):
+                    estado_actual = config.MENU_PRINCIPAL
             
             elif estado_actual == config.INTRO:
                 if btn_skip.check_hover(mouse_pos):
@@ -359,7 +370,7 @@ while running:
                 elif btn_volver_go.check_hover(mouse_pos):
                     estado_actual = config.MENU_PRINCIPAL
 
-    if estado_actual != config.INTRO:
+    if estado_actual != config.INTRO and estado_actual != config.CONTROLES:
         if bg_actual_img and "galaxia.jpg" in bg_actual_img:
             if estado_actual != config.GAME_OVER and estado_actual != config.PAUSA and estado_actual != config.NIVEL_COMPLETADO and estado_actual != config.INGRESO_NOMBRE:
                 y_fondo = (y_fondo + 1) % config.H
@@ -368,10 +379,9 @@ while running:
         else:
             window.blit(bg, (0, 0))
     else:
-        window.fill((0, 0, 0)) # Fondo negro para la intro
+        window.fill((0, 0, 0))
 
     if estado_actual == config.INTRO:
-        # Lógica de tipo máquina de escribir
         now = pygame.time.get_ticks()
         if now - last_type_time > 50:
             if char_index < len(intro_text[current_line]):
@@ -387,7 +397,6 @@ while running:
         for i in range(current_line + 1):
             text_to_draw = intro_text[i][:char_index] if i == current_line else intro_text[i]
             surf = font_story.render(text_to_draw, True, (255, 255, 255))
-            # Ajuste de espaciado vertical de 40 a 50 para compensar más líneas
             window.blit(surf, (50, 100 + i * 50))
         
         btn_skip.check_hover(mouse_pos)
@@ -398,22 +407,46 @@ while running:
         font_subtitle = pygame.font.SysFont("Courier New", 40, bold=True)
 
         btn_jugar.check_hover(mouse_pos)
+        btn_controles.check_hover(mouse_pos)
         btn_salir.check_hover(mouse_pos)
 
-        gato_img = pygame.image.load(config.GATOS_DISPONIBLES[0]).convert_alpha()
-        gato_img = pygame.transform.smoothscale(gato_img, (150, 150))
-        window.blit(gato_img, (config.W // 2 - 75, config.H // 2 - 320))
+        try:
+            gato_img = pygame.image.load(config.GATOS_DISPONIBLES[0]).convert_alpha()
+            gato_img = pygame.transform.smoothscale(gato_img, (130, 130))
+            window.blit(gato_img, (config.W // 2 - 65, config.H // 2 - 300))
+        except:
+            pass
 
         t_titulo = "ETHEL(UIA)"
         w_tit = font_title.render(t_titulo, True, (0,0,0)).get_width()
-        draw_text_outlined(window, t_titulo, font_title, (75, 0, 130), (255, 215, 0), config.W // 2 - w_tit // 2, config.H // 2 - 220)
+        draw_text_outlined(window, t_titulo, font_title, (75, 0, 130), (255, 215, 0), config.W // 2 - w_tit // 2, config.H // 2 - 200)
 
         t_sub = "LOST GALAXY"
         w_sub = font_subtitle.render(t_sub, True, (0,0,0)).get_width()
-        draw_text_with_shadow(window, t_sub, font_subtitle, (255, 255, 255), config.W // 2 - w_sub // 2, config.H // 2 - 140)
+        draw_text_with_shadow(window, t_sub, font_subtitle, (255, 255, 255), config.W // 2 - w_sub // 2, config.H // 2 - 120)
 
         btn_jugar.draw(window, font_btn)
+        btn_controles.draw(window, font_btn)
         btn_salir.draw(window, font_btn)
+
+    elif estado_actual == config.CONTROLES:
+        t_ct = "CONTROLES"
+        w_ct = font_big.render(t_ct, True, (0,0,0)).get_width()
+        draw_text_with_shadow(window, t_ct, font_big, (212, 175, 55), config.W // 2 - w_ct // 2, 40)
+
+        instrucciones = [
+            ("FLECHAS / A-D", "Mover la nave"),
+            ("ESPACIO", "Disparar proyectil"),
+            ("ESC", "Pausar / Volver")
+        ]
+
+        for i, (tecla, desc) in enumerate(instrucciones):
+            y_pos = 150 + (i * 65)
+            draw_text_with_shadow(window, f"> {tecla}:", font_small, (255, 215, 0), config.W // 2 - 300, y_pos)
+            draw_text_with_shadow(window, desc, font_small, (255, 255, 255), config.W // 2 + 10, y_pos)
+
+        btn_volver_controles.check_hover(mouse_pos)
+        btn_volver_controles.draw(window, font_btn)
 
     elif estado_actual == config.SELECCION_GATO:
         btn_prev.check_hover(mouse_pos)
